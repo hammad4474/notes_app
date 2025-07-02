@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
-import 'package:notes_app/view/home_screen.dart';
-import 'package:notes_app/view/notes_screen.dart';
 import 'package:notes_app/view/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

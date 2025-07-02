@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:notes_app/view/notes_adding.dart';
 import 'package:notes_app/view/notes_screen.dart';
-import 'package:notes_app/model/notes_model.dart';
 import 'package:notes_app/controllers/adding_notes_controller.dart';
 
 class HomeScreen extends StatefulWidget {
