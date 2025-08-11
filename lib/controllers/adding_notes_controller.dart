@@ -14,10 +14,53 @@ class NotesController extends GetxController {
     loadNotesFromStorage();
   }
 
+  // Migrate existing notes to ensure they all have IDs
+  Future<void> _migrateNotesIfNeeded() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notesJson = prefs.getStringList('notes_list') ?? [];
+
+      bool needsMigration = false;
+      List<String> migratedNotesJson = [];
+
+      for (String noteJson in notesJson) {
+        try {
+          Map<String, dynamic> noteMap = jsonDecode(noteJson);
+
+          // Check if note needs migration (missing ID)
+          if (noteMap['id'] == null || noteMap['id'].toString().isEmpty) {
+            needsMigration = true;
+            // Add ID to the note
+            noteMap['id'] =
+                DateTime.now().millisecondsSinceEpoch.toString() +
+                '_migrated_${migratedNotesJson.length}';
+          }
+
+          migratedNotesJson.add(jsonEncode(noteMap));
+        } catch (e) {
+          print('Error during migration: $e');
+          // Keep the original note if parsing fails
+          migratedNotesJson.add(noteJson);
+        }
+      }
+
+      // Save migrated notes if needed
+      if (needsMigration && migratedNotesJson.isNotEmpty) {
+        await prefs.setStringList('notes_list', migratedNotesJson);
+        print('Notes migrated successfully');
+      }
+    } catch (e) {
+      print('Migration failed: $e');
+    }
+  }
+
   // Load notes from SharedPreferences
   Future<void> loadNotesFromStorage() async {
     try {
       isLoading.value = true;
+
+      // First, migrate notes if needed
+      await _migrateNotesIfNeeded();
 
       // Wait a bit to ensure SharedPreferences is ready
       await Future.delayed(const Duration(milliseconds: 200));
@@ -30,8 +73,19 @@ class NotesController extends GetxController {
       for (String noteJson in notesJson) {
         try {
           Map<String, dynamic> noteMap = jsonDecode(noteJson);
+
+          // Ensure we have a valid ID for each note
+          String noteId = noteMap['id']?.toString() ?? '';
+          if (noteId.isEmpty) {
+            // Generate a unique ID for notes without one
+            noteId =
+                DateTime.now().millisecondsSinceEpoch.toString() +
+                '_${loadedNotes.length}';
+          }
+
           loadedNotes.add(
             NotesModel(
+              id: noteId,
               title: noteMap['title'] ?? 'Untitled',
               description: noteMap['description'] ?? '',
             ),
@@ -72,8 +126,22 @@ class NotesController extends GetxController {
         if (noteJson != null) {
           try {
             Map<String, dynamic> noteMap = jsonDecode(noteJson);
+
+            // Ensure we have a valid ID for each note
+            String noteId = noteMap['id'];
+            if (noteId == null || noteId.isEmpty) {
+              // Use the key as ID or generate a new one
+              noteId = key.replaceFirst('note_', '');
+              if (noteId.isEmpty) {
+                noteId =
+                    DateTime.now().millisecondsSinceEpoch.toString() +
+                    '_alt_${loadedNotes.length}';
+              }
+            }
+
             loadedNotes.add(
               NotesModel(
+                id: noteId,
                 title: noteMap['title'] ?? 'Untitled',
                 description: noteMap['description'] ?? '',
               ),
@@ -97,6 +165,7 @@ class NotesController extends GetxController {
   Future<void> addNote(String title, String description) async {
     try {
       final newNote = NotesModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: title.trim().isEmpty ? 'Untitled Note' : title.trim(),
         description: description.trim(),
       );
@@ -126,7 +195,7 @@ class NotesController extends GetxController {
           'title': note.title,
           'description': note.description,
           'createdAt': DateTime.now().toIso8601String(),
-          'id': DateTime.now().millisecondsSinceEpoch.toString(),
+          'id': note.id,
         });
       }).toList();
 
@@ -162,6 +231,52 @@ class NotesController extends GetxController {
     } catch (e) {
       print('Alternative saving also failed: $e');
       // Note is still in memory, just not persisted
+    }
+  }
+
+  // Update an existing note
+  Future<void> updateNote(
+    String id,
+    String newTitle,
+    String newDescription,
+  ) async {
+    try {
+      // Validate inputs
+      if (id.isEmpty) {
+        throw Exception('Invalid note ID');
+      }
+
+      final noteIndex = notes.indexWhere((note) => note.id == id);
+      if (noteIndex != -1) {
+        final updatedNote = NotesModel(
+          id: id,
+          title: newTitle.trim().isEmpty ? 'Untitled Note' : newTitle.trim(),
+          description: newDescription.trim(),
+        );
+
+        // Update in memory
+        notes[noteIndex] = updatedNote;
+
+        // Save to SharedPreferences
+        await _saveNotesToStorage();
+
+        print('Note updated and saved: ${updatedNote.title}');
+      } else {
+        throw Exception('Note not found with ID: $id');
+      }
+    } catch (e) {
+      print('Error updating note: $e');
+      rethrow;
+    }
+  }
+
+  // Find note by ID
+  NotesModel? findNoteById(String id) {
+    try {
+      if (id.isEmpty) return null;
+      return notes.firstWhere((note) => note.id == id);
+    } catch (e) {
+      return null;
     }
   }
 

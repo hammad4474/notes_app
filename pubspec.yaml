@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.2+3
 
 environment:
   sdk: ^3.8.1
@@ -37,6 +37,11 @@ dependencies:
   get: ^4.6.6
   animated_text_kit: ^4.2.2
   shared_preferences: ^2.2.2
+  google_fonts: ^6.1.0
+  path_provider: ^2.1.2
+  updat: ^1.4.0
+  package_info_plus: ^8.0.2
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:
@@ -72,17 +77,8 @@ flutter:
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font.
-  fonts:
-    - family: Caveat
-      fonts:
-        - asset: assets/fonts/Caveat-Variable.ttf
-  
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+  # Google Fonts are now used instead of local font assets
+  # This provides access to hundreds of beautiful fonts automatically
 
 # Flutter Launcher Icons Configuration
 flutter_launcher_icons:
